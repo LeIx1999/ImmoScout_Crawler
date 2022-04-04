@@ -52,15 +52,56 @@ def get_housing_data(self):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     items = soup.find("div", {"class": "SearchList-22b2e"})
 
-    # # Loop through apartments and click all items
-    for item in items:
-        driver.execute_script("arguments[0].click();", item)
-        driver.back()
+    # save old url
+    search_url = driver.current_url
+
+    # Loop through the first 4 sites
+    for i in range(4):
+
+        # Loop through apartments and click all items (loop through children)
+        result = []
+        for item in items.children:
+            tag_element = item.findChild()
+
+            # check if NoneType
+            if tag_element is not None:
+                link = tag_element.get("href")
+                driver.get(link)
+                time.sleep(2)
+
+                element_result = []
+                # get data
+                try:
+                    name = driver.find_element(By.XPATH, '// *[ @ id = "aUebersicht"] / h1')
+                    price = driver.find_element(By.XPATH,
+                                                '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[1]/div[1]/strong')
+                    sm = driver.find_element(By.XPATH,
+                                             '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[1]/span')
+                    rooms = driver.find_element(By.XPATH,
+                                                '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[2]/span')
+                    adress = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
+                    info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[1]')
+                    info_2 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[2]/ul')
+                    info_3 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[3]/ul')
+                    element_result.append(
+                        [name.text, price.text, sm.text, rooms.text, adress.text, info_1.text, info_2.text,
+                         info_3.text])
+
+                except:
+                    print("exception")
+                result.append(element_result)
+        # go back to search result site
+        driver.get(search_url)
+
+        return(result)
+        # go to next site
+        # next_page = driver.find_element(By.XPATH, "/html/body/div[1]/main/div/div[1]/div/div[7]/div/button[1]")
+        # next_page.click()
 
 
 
-# call function
-print(get_housing_data("Köln"))
+print(get_housing_data("Hamburg"))
+
 
 
 
