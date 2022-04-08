@@ -52,6 +52,8 @@ def get_housing_data(self):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     items = soup.find("div", {"class": "SearchList-22b2e"})
 
+    # find next page
+    page = soup.find("div", {"class": "Pagination-190de"})
     # save old url
     search_url = driver.current_url
 
@@ -80,7 +82,7 @@ def get_housing_data(self):
                     rooms = driver.find_element(By.XPATH,
                                                 '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[2]/span')
                     adress = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
-                    info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[1]')
+                    info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[2]/ul/li[1]')
                     info_2 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[2]/ul')
                     info_3 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[3]/ul')
                     element_result.append(
@@ -93,10 +95,11 @@ def get_housing_data(self):
         # go back to search result site
         driver.get(search_url)
 
-        return(result)
+
         # go to next site
-        # next_page = driver.find_element(By.XPATH, "/html/body/div[1]/main/div/div[1]/div/div[7]/div/button[1]")
-        # next_page.click()
+        next_page = driver.find_element(By.XPATH, "/html/body/div[1]/main/div/div[1]/div/div[7]/div/button[2]")
+        next_page.click()
+        return (result)
 
 
 
