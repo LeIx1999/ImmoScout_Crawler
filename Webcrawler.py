@@ -1,21 +1,18 @@
-import requests
-import selenium
-import time
 from selenium import webdriver
 # Um mit der Seite zu interagieren
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 import requests
 import time
-from os.path import exists
+
 
 def get_housing_data(self):
+    # Input city to lowercase
+    self = self.lower()
+
     # URL of target website
     url = "https://www.immowelt.de/"
 
@@ -52,16 +49,19 @@ def get_housing_data(self):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     items = soup.find("div", {"class": "SearchList-22b2e"})
 
-    # find next page
-    page = soup.find("div", {"class": "Pagination-190de"})
-    # save old url
-    search_url = driver.current_url
+    result = []
+    # Loop through the first 5 sites
+    for i in range(1, 6):
+        if i != 1:
+            # go to next site
+            driver.get(f"https://www.immowelt.de/liste/{self}/wohnungen/mieten?d=true&sd=DESC&sf=RELEVANCE&sp={i}")
 
-    # Loop through the first 4 sites
-    for i in range(4):
+            time.sleep(2)
+            # find next apartments
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            items = soup.find("div", {"class": "SearchList-22b2e"})
 
         # Loop through apartments and click all items (loop through children)
-        result = []
         for item in items.children:
             tag_element = item.findChild()
 
@@ -71,7 +71,7 @@ def get_housing_data(self):
                 driver.get(link)
                 time.sleep(2)
 
-                element_result = []
+
                 # get data
                 try:
                     name = driver.find_element(By.XPATH, '// *[ @ id = "aUebersicht"] / h1')
@@ -82,28 +82,19 @@ def get_housing_data(self):
                     rooms = driver.find_element(By.XPATH,
                                                 '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[2]/span')
                     adress = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
-                    info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[2]/ul/li[1]')
-                    info_2 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[2]/ul')
-                    info_3 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card/div[3]/ul')
-                    element_result.append(
-                        [name.text, price.text, sm.text, rooms.text, adress.text, info_1.text, info_2.text,
-                         info_3.text])
+                    info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card')
+
+                    result.append(
+                        [name.text, price.text, sm.text, rooms.text, adress.text, info_1.get_attribute("textContent")])
 
                 except:
                     print("exception")
-                result.append(element_result)
-        # go back to search result site
-        driver.get(search_url)
 
-
-        # go to next site
-        next_page = driver.find_element(By.XPATH, "/html/body/div[1]/main/div/div[1]/div/div[7]/div/button[2]")
-        next_page.click()
-        return (result)
+    return (result)
 
 
 
-print(get_housing_data("Hamburg"))
+print(get_housing_data("hamburg"))
 
 
 
