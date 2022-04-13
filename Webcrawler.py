@@ -1,4 +1,6 @@
+import pandas as pd
 from selenium import webdriver
+import numpy as np
 # Um mit der Seite zu interagieren
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
@@ -8,6 +10,12 @@ from bs4 import BeautifulSoup
 import requests
 import time
 
+# settings for printing in console
+width = 320
+pd.set_option("display.width", width)
+pd.set_option("display.max_rows", 100)
+np.set_printoptions(linewidth=width)
+pd.set_option("display.max_columns", 30)
 
 def get_housing_data(self):
     # Input city to lowercase
@@ -15,14 +23,6 @@ def get_housing_data(self):
 
     # URL of target website
     url = "https://www.immowelt.de/"
-
-    # get html
-    html = requests.get(url)
-    html_doc = BeautifulSoup(html.text, "html.parser")
-
-    #test
-    Immobilie = html_doc.find_all(text = "Immobilie")
-    # print(Immobilie[0].parent)
 
     # load chrome webdriver with a Service
     driver = webdriver.Chrome(service = Service(ChromeDriverManager().install()))
@@ -51,7 +51,7 @@ def get_housing_data(self):
 
     result = []
     # Loop through the first 5 sites
-    for i in range(1, 6):
+    for i in range(1, 3):
         if i != 1:
             # go to next site
             driver.get(f"https://www.immowelt.de/liste/{self}/wohnungen/mieten?d=true&sd=DESC&sf=RELEVANCE&sp={i}")
@@ -78,23 +78,25 @@ def get_housing_data(self):
                     price = driver.find_element(By.XPATH,
                                                 '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[1]/div[1]/strong')
                     sm = driver.find_element(By.XPATH,
-                                             '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[1]/span')
+                                                 '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[1]/span')
                     rooms = driver.find_element(By.XPATH,
                                                 '//*[@id="aUebersicht"]/app-hardfacts/div/div/div[2]/div[2]/span')
-                    adress = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
+                    address = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
                     info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card')
 
                     result.append(
-                        [name.text, price.text, sm.text, rooms.text, adress.text, info_1.get_attribute("textContent")])
+                        [name.text, price.text, sm.text, rooms.text, address.text, info_1.get_attribute("textContent")])
 
                 except:
                     print("exception")
 
+    # result as pandas data frame
+    result = pd.DataFrame(result, columns=["Description", "Price", "square-meters", "rooms", "address", "information"])
     return (result)
 
 
-
-print(get_housing_data("hamburg"))
+data = get_housing_data("köln")
+print(data)
 
 
 
