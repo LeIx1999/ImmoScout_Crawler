@@ -1,25 +1,16 @@
 import pandas as pd
 from selenium import webdriver
-import numpy as np
-# Um mit der Seite zu interagieren
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-import requests
 import time
 
-# settings for printing in console
-width = 320
-pd.set_option("display.width", width)
-pd.set_option("display.max_rows", 100)
-np.set_printoptions(linewidth=width)
-pd.set_option("display.max_columns", 30)
 
-def get_housing_data(self):
+def get_housing_data(search_term, n_sites):
     # Input city to lowercase
-    self = self.lower()
+    search_term = search_term.lower()
 
     # URL of target website
     url = "https://www.immowelt.de/"
@@ -30,17 +21,19 @@ def get_housing_data(self):
     # call URL
     driver.get(url)
 
-    # Return site title
-    print(driver.title)
-
     # look for search bar
     search = driver.find_element(By.ID, 'tbLocationInput')
 
     # type string in search bar
-    search.send_keys(self)
+    search.send_keys(search_term)
 
     # press return
     search.send_keys(Keys.RETURN)
+
+    # Handling german Umlaute
+    character = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
+    for char in character:
+        search_term = search_term.replace(char, character[char])
 
     # wait for site to load
     time.sleep(2)
@@ -50,16 +43,20 @@ def get_housing_data(self):
     items = soup.find("div", {"class": "SearchList-22b2e"})
 
     result = []
-    # Loop through the first 5 sites
-    for i in range(1, 3):
+    # Loop through the first n sites
+    for i in range(1, n_sites + 1):
         if i != 1:
             # go to next site
-            driver.get(f"https://www.immowelt.de/liste/{self}/wohnungen/mieten?d=true&sd=DESC&sf=RELEVANCE&sp={i}")
+            driver.get(f"https://www.immowelt.de/liste/{search_term}/wohnungen/mieten?d=true&sd=DESC&sf=RELEVANCE&sp={i}")
 
             time.sleep(2)
             # find next apartments
             soup = BeautifulSoup(driver.page_source, "html.parser")
             items = soup.find("div", {"class": "SearchList-22b2e"})
+
+        # check if there are apartments
+        if items is None:
+            break
 
         # Loop through apartments and click all items (loop through children)
         for item in items.children:
@@ -70,7 +67,6 @@ def get_housing_data(self):
                 link = tag_element.get("href")
                 driver.get(link)
                 time.sleep(2)
-
 
                 # get data
                 try:
@@ -84,20 +80,15 @@ def get_housing_data(self):
                     address = driver.find_element(By.XPATH, '//*[@id="aUebersicht"]/app-estate-address')
                     info_1 = driver.find_element(By.XPATH, '//*[@id="aImmobilie"]/sd-card')
 
-                    result.append(
-                        [name.text, price.text, sm.text, rooms.text, address.text, info_1.get_attribute("textContent")])
-
+                    result.append([name.get_attribute("textContent"), price.get_attribute("textContent"),
+                                   sm.get_attribute("textContent"), rooms.get_attribute("textContent"),
+                                   address.get_attribute("textContent"), info_1.get_attribute("textContent")])
                 except:
                     print("exception")
+    # quit driver
+    driver.quit()
 
     # result as pandas data frame
     result = pd.DataFrame(result, columns=["Description", "Price", "square-meters", "rooms", "address", "information"])
     return (result)
-
-
-data = get_housing_data("köln")
-print(data)
-
-
-
 
